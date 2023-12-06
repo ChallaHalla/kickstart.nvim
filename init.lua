@@ -285,7 +285,15 @@ vim.keymap.set('n', 'j', "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = tr
 
 -- Adding custom keymappings from old vim config
 vim.keymap.set('n', 'Q', ":q<CR>")
+vim.keymap.set('n', 'W', ":w!<CR>")
 vim.keymap.set('n', 'X', ":x<CR>")
+
+-- normal mode:
+vim.keymap.set('n', '<c-j>', "5j")
+vim.keymap.set('n', '<c-k>', "5k")
+-- visual mode:
+vim.keymap.set('v', '<c-j>', "5j")
+vim.keymap.set('v', '<c-k>', "5k")
 
 
 -- Diagnostic keymaps
@@ -475,7 +483,7 @@ local on_attach = function(_, bufnr)
 
   -- See `:help K` for why this keymap
   nmap('K', vim.lsp.buf.hover, 'Hover Documentation')
-  nmap('<C-k>', vim.lsp.buf.signature_help, 'Signature Documentation')
+  -- nmap('<C-k>', vim.lsp.buf.signature_help, 'Signature Documentation')
 
   -- Lesser used LSP functionality
   nmap('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
