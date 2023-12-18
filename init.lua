@@ -1,5 +1,4 @@
 --[[
-
 =====================================================================
 ==================== READ THIS BEFORE CONTINUING ====================
 =====================================================================
@@ -43,7 +42,6 @@ P.S. You can delete this when you're done too. It's your config now :)
 --  NOTE: Must happen before plugins are required (otherwise wrong leader will be used)
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
-
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    https://github.com/folke/lazy.nvim
 --    `:help lazy.nvim.txt` for more info
@@ -94,7 +92,24 @@ require('lazy').setup({
       'folke/neodev.nvim',
     },
   },
-
+  {
+    "zbirenbaum/copilot.lua",
+    cmd = "Copilot",
+    event = "InsertEnter",
+    config = function()
+      -- Run `:Copilot auth` to authenticate.
+      require("copilot").setup({
+        -- It is recommended to disable copilot.lua's suggestion and panel modules, as they can interfere with completions properly appearing in copilot-cmp.
+        suggestion = { enabled = false },
+        panel = { enabled = false },
+      })
+    end,
+  },
+  {
+    "zbirenbaum/copilot-cmp",
+    dependencies = { "zbirenbaum/copilot.lua" },
+    config = true,
+  },
   {
     -- Autocompletion
     'hrsh7th/nvim-cmp',
@@ -294,6 +309,7 @@ vim.keymap.set('n', '<c-k>', "5k")
 -- visual mode:
 vim.keymap.set('v', '<c-j>', "5j")
 vim.keymap.set('v', '<c-k>', "5k")
+vim.keymap.set('v', '<Leader>y', '"*y')
 
 
 -- Diagnostic keymaps
@@ -614,6 +630,7 @@ cmp.setup {
   sources = {
     { name = 'nvim_lsp' },
     { name = 'luasnip' },
+    { name = 'copilot' },
   },
 }
 
