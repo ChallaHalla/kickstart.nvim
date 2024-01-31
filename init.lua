@@ -302,6 +302,10 @@ vim.keymap.set('n', 'j', "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = tr
 vim.keymap.set('n', 'Q', ":q<CR>")
 vim.keymap.set('n', 'W', ":w!<CR>")
 vim.keymap.set('n', 'X', ":x<CR>")
+vim.api.nvim_create_autocmd("BufWritePre", {
+  command = "EslintFixAll",
+})
+
 
 -- normal mode:
 vim.keymap.set('n', '<c-j>', "5j")
@@ -544,7 +548,7 @@ local servers = {
   -- gopls = {},
   -- pyright = {},
   -- rust_analyzer = {},
-  -- tsserver = {},
+  tsserver = { filetypes = { 'tsx', 'ts' } },
   html = { filetypes = { 'html', 'twig', 'hbs' } },
 
   lua_ls = {
