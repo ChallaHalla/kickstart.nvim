@@ -303,8 +303,16 @@ vim.keymap.set('n', 'Q', ":q<CR>")
 vim.keymap.set('n', 'W', ":w!<CR>")
 vim.keymap.set('n', 'X', ":x<CR>")
 vim.api.nvim_create_autocmd("BufWritePre", {
+  pattern = "*.ts,*.tsx,.js,.jsx",
   command = "EslintFixAll",
 })
+vim.api.nvim_create_autocmd("BufWritePre", {
+  pattern = "*.html.erb",
+  command = ":%!htmlbeautifier",
+})
+
+
+
 
 
 -- normal mode:
@@ -548,6 +556,10 @@ local servers = {
   -- gopls = {},
   -- pyright = {},
   -- rust_analyzer = {},
+  eslint = {
+    cmd = { "vscode-eslint-language-server", "--stdio" },
+    filetypes = { "javascript", "javascriptreact", "javascript.jsx", "typescript", "typescriptreact", "typescript.tsx", "vue", "svelte", "astro" }
+  },
   tsserver = { filetypes = { 'tsx', 'ts' } },
   html = { filetypes = { 'html', 'twig', 'hbs' } },
 
