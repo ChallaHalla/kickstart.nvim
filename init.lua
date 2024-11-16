@@ -556,24 +556,22 @@ local servers = {
   -- gopls = {},
   -- pyright = {},
   -- rust_analyzer = {},
-  eslint = {
-    cmd = { "vscode-eslint-language-server", "--stdio" },
-    filetypes = { "javascript", "javascriptreact", "javascript.jsx", "typescript", "typescriptreact", "typescript.tsx", "vue", "svelte", "astro" }
-  },
-  ruby_lsp = {
-    filetypes = { "ruby" }
-  },
-  tsserver = { filetypes = { 'tsx', 'ts' } },
-  html = { filetypes = { 'html', 'twig', 'hbs' } },
+  -- eslint = {
+  --   cmd = { "vscode-eslint-language-server", "--stdio" },
+  --   filetypes = { "javascript", "javascriptreact", "javascript.jsx", "typescript", "typescriptreact", "typescript.tsx", "vue", "svelte", "astro" }
+  -- },
+  ruby_lsp = {},
+  -- tsserver = { filetypes = { 'tsx', 'ts' } },
+  -- html = { filetypes = { 'html', 'twig', 'hbs' } },
 
-  lua_ls = {
-    Lua = {
-      workspace = { checkThirdParty = false },
-      telemetry = { enable = false },
-      -- NOTE: toggle below to ignore Lua_LS's noisy `missing-fields` warnings
-      -- diagnostics = { disable = { 'missing-fields' } },
-    },
-  },
+  -- lua_ls = {
+  --   Lua = {
+  --     workspace = { checkThirdParty = false },
+  --     telemetry = { enable = false },
+  --     -- NOTE: toggle below to ignore Lua_LS's noisy `missing-fields` warnings
+  --     -- diagnostics = { disable = { 'missing-fields' } },
+  --   },
+  -- },
 }
 
 -- Setup neovim lua configuration
@@ -649,7 +647,6 @@ cmp.setup {
   sources = {
     { name = 'nvim_lsp' },
     { name = 'luasnip' },
-    { name = 'copilot' },
   },
 }
 
