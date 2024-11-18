@@ -552,15 +552,12 @@ require('mason-lspconfig').setup()
 --  If you want to override the default filetypes that your language server will attach to you can
 --  define the property 'filetypes' to the map in question.
 local servers = {
-  -- clangd = {},
-  -- gopls = {},
-  -- pyright = {},
-  -- rust_analyzer = {},
   -- eslint = {
   --   cmd = { "vscode-eslint-language-server", "--stdio" },
   --   filetypes = { "javascript", "javascriptreact", "javascript.jsx", "typescript", "typescriptreact", "typescript.tsx", "vue", "svelte", "astro" }
   -- },
   ruby_lsp = {},
+  sorbet= {},
   -- tsserver = { filetypes = { 'tsx', 'ts' } },
   -- html = { filetypes = { 'html', 'twig', 'hbs' } },
 
