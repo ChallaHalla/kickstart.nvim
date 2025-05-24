@@ -69,11 +69,17 @@ require('lazy').setup({
 
   -- Git related plugins
   'tpope/vim-fugitive',
+  'tpope/vim-abolish',
   'tpope/vim-rhubarb',
 
   -- Detect tabstop and shiftwidth automatically
   'tpope/vim-sleuth',
-
+  {
+    "m4xshen/hardtime.nvim",
+    lazy = false,
+    dependencies = { "MunifTanjim/nui.nvim" },
+    opts = {},
+  },
   -- NOTE: This is where your plugins related to LSP can be installed.
   --  The configuration is done below. Search for lspconfig to find it below.
   {
@@ -246,6 +252,8 @@ require('lazy').setup({
   --    For additional information see: https://github.com/folke/lazy.nvim#-structuring-your-plugins
   { import = 'custom.plugins' },
 }, {})
+
+require("hardtime").setup()
 
 -- [[ Setting options ]]
 -- See `:help vim.o`
@@ -557,18 +565,25 @@ local servers = {
   --   filetypes = { "javascript", "javascriptreact", "javascript.jsx", "typescript", "typescriptreact", "typescript.tsx", "vue", "svelte", "astro" }
   -- },
   ruby_lsp = {},
-  sorbet= {},
-  -- tsserver = { filetypes = { 'tsx', 'ts' } },
+  sorbet = {},
+  tsserver = { filetypes = { 'tsx', 'ts' } },
+  rust_analyzer = {
+    ["rust-analyzer"] = {
+      checkOnSave = {
+        command = "clippy",
+      },
+    },
+  },
   -- html = { filetypes = { 'html', 'twig', 'hbs' } },
 
-  -- lua_ls = {
-  --   Lua = {
-  --     workspace = { checkThirdParty = false },
-  --     telemetry = { enable = false },
-  --     -- NOTE: toggle below to ignore Lua_LS's noisy `missing-fields` warnings
-  --     -- diagnostics = { disable = { 'missing-fields' } },
-  --   },
-  -- },
+  lua_ls = {
+    Lua = {
+      workspace = { checkThirdParty = false },
+      telemetry = { enable = false },
+      -- NOTE: toggle below to ignore Lua_LS's noisy `missing-fields` warnings
+      -- diagnostics = { disable = { 'missing-fields' } },
+    },
+  },
 }
 
 -- Setup neovim lua configuration
