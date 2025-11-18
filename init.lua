@@ -42,6 +42,8 @@ P.S. You can delete this when you're done too. It's your config now :)
 --  NOTE: Must happen before plugins are required (otherwise wrong leader will be used)
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
+vim.g.lazyvim_rust_diagnostics = "rust-analyzer"
+
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    https://github.com/folke/lazy.nvim
 --    `:help lazy.nvim.txt` for more info
@@ -74,12 +76,6 @@ require('lazy').setup({
 
   -- Detect tabstop and shiftwidth automatically
   'tpope/vim-sleuth',
-  {
-    "m4xshen/hardtime.nvim",
-    lazy = false,
-    dependencies = { "MunifTanjim/nui.nvim" },
-    opts = {},
-  },
   -- NOTE: This is where your plugins related to LSP can be installed.
   --  The configuration is done below. Search for lspconfig to find it below.
   {
@@ -97,6 +93,177 @@ require('lazy').setup({
       -- Additional lua configuration, makes nvim stuff amazing!
       'folke/neodev.nvim',
     },
+  },
+  {
+    "mrcjkb/rustaceanvim",
+    version = vim.fn.has("nvim-0.10.0") == 0 and "^4" or false,
+    ft = { "rust" },
+    opts = {
+      server = {
+        on_attach = function(client, bufnr)
+          -- Enable inlay hints if supported by the server (Neovim 0.10+)
+          if client.server_capabilities.inlayHintProvider and vim.lsp.inlay_hint then
+            vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
+          end
+
+          -- Rust-specific keybindings
+          local nmap = function(keys, func, desc)
+            vim.keymap.set('n', keys, func, { buffer = bufnr, desc = 'Rust: ' .. desc })
+          end
+
+          nmap('<leader>rr', '<cmd>RustLsp runnables<cr>', 'Run/Debug')
+          nmap('<leader>rd', '<cmd>RustLsp debuggables<cr>', 'Debug')
+          nmap('<leader>rt', '<cmd>RustLsp testables<cr>', 'Test')
+          nmap('<leader>re', '<cmd>RustLsp expandMacro<cr>', 'Expand Macro')
+          nmap('<leader>rc', '<cmd>RustLsp openCargo<cr>', 'Open Cargo.toml')
+          nmap('<leader>rp', '<cmd>RustLsp parentModule<cr>', 'Parent Module')
+          nmap('<leader>rj', '<cmd>RustLsp joinLines<cr>', 'Join Lines')
+          nmap('<leader>rh', '<cmd>RustLsp hover actions<cr>', 'Hover Actions')
+          nmap('<leader>ra', '<cmd>RustLsp codeAction<cr>', 'Code Action')
+        end,
+        default_settings = {
+          ["rust-analyzer"] = {
+            cargo = {
+              allFeatures = true,
+              loadOutDirsFromCheck = true,
+              runBuildScripts = true,
+            },
+            check = {
+              command = "clippy",
+              extraArgs = { "--", "-D", "warnings" },
+            },
+            procMacro = {
+              enable = true,
+              ignored = {
+                ["async-trait"] = { "async_trait" },
+                ["napi-derive"] = { "napi" },
+                ["async-recursion"] = { "async_recursion" },
+              },
+            },
+            inlayHints = {
+              bindingModeHints = { enable = false },
+              chainingHints = { enable = true },
+              closingBraceHints = { enable = true, minLines = 25 },
+              closureReturnTypeHints = { enable = "never" },
+              lifetimeElisionHints = { enable = "never", useParameterNames = false },
+              maxLength = 25,
+              parameterHints = { enable = true },
+              reborrowHints = { enable = "never" },
+              renderColons = true,
+              typeHints = { enable = true, hideClosureInitialization = false, hideNamedConstructor = false },
+            },
+          },
+        },
+      },
+    },
+    config = function(_, opts)
+      local package_path = require("mason-registry").get_package("codelldb"):get_install_path()
+      local codelldb = package_path .. "/extension/adapter/codelldb"
+      local library_path = package_path .. "/extension/lldb/lib/liblldb.dylib"
+      local uname = io.popen("uname"):read("*l")
+      if uname == "Linux" then
+        library_path = package_path .. "/extension/lldb/lib/liblldb.so"
+      end
+      opts.dap = {
+        adapter = require("rustaceanvim.config").get_codelldb_adapter(codelldb, library_path),
+      }
+      vim.g.rustaceanvim = vim.tbl_deep_extend("keep", vim.g.rustaceanvim or {}, opts or {})
+      if vim.fn.executable("rust-analyzer") == 0 then
+        error()
+      end
+    end,
+  },
+  {
+    -- Crates.nvim for Cargo.toml management
+    'saecki/crates.nvim',
+    event = { "BufRead Cargo.toml" },
+    config = function()
+      require('crates').setup({
+        null_ls = {
+          enabled = true,
+          name = "crates.nvim",
+        },
+        popup = {
+          autofocus = true,
+        },
+      })
+    end,
+  },
+  {
+    -- Debug Adapter Protocol support
+    'mfussenegger/nvim-dap',
+    dependencies = {
+      'rcarriga/nvim-dap-ui',
+      'theHamsta/nvim-dap-virtual-text',
+      'nvim-neotest/nvim-nio',
+    },
+    config = function()
+      local dap = require('dap')
+      local dapui = require('dapui')
+
+      -- Setup dap ui
+      dapui.setup()
+      require('nvim-dap-virtual-text').setup()
+
+      -- Auto open/close dapui
+      dap.listeners.after.event_initialized["dapui_config"] = function()
+        dapui.open()
+      end
+      dap.listeners.before.event_terminated["dapui_config"] = function()
+        dapui.close()
+      end
+      dap.listeners.before.event_exited["dapui_config"] = function()
+        dapui.close()
+      end
+
+      -- Key mappings for debugging
+      vim.keymap.set('n', '<F5>', dap.continue, { desc = 'Debug: Start/Continue' })
+      vim.keymap.set('n', '<F1>', dap.step_into, { desc = 'Debug: Step Into' })
+      vim.keymap.set('n', '<F2>', dap.step_over, { desc = 'Debug: Step Over' })
+      vim.keymap.set('n', '<F3>', dap.step_out, { desc = 'Debug: Step Out' })
+      vim.keymap.set('n', '<leader>db', dap.toggle_breakpoint, { desc = 'Debug: Toggle Breakpoint' })
+      vim.keymap.set('n', '<leader>dB', function()
+        dap.set_breakpoint(vim.fn.input 'Breakpoint condition: ')
+      end, { desc = 'Debug: Set Breakpoint' })
+      vim.keymap.set('n', '<leader>dr', dap.repl.open, { desc = 'Debug: Open REPL' })
+      vim.keymap.set('n', '<leader>dl', dap.run_last, { desc = 'Debug: Run Last' })
+      vim.keymap.set('n', '<leader>du', dapui.toggle, { desc = 'Debug: Toggle UI' })
+    end,
+  },
+  {
+    -- Test runner integration
+    "nvim-neotest/neotest",
+    dependencies = {
+      "nvim-lua/plenary.nvim",
+      "antoinemadec/FixCursorHold.nvim",
+      "nvim-treesitter/nvim-treesitter",
+      "rouge8/neotest-rust",
+    },
+    config = function()
+      require("neotest").setup({
+        adapters = {
+          require("neotest-rust") {
+            args = { "--no-capture" },
+            dap_adapter = "codelldb",
+          }
+        },
+      })
+
+      -- Test keybindings
+      vim.keymap.set('n', '<leader>tn', function() require("neotest").run.run() end, { desc = 'Test: Run Nearest' })
+      vim.keymap.set('n', '<leader>tf', function() require("neotest").run.run(vim.fn.expand("%")) end,
+        { desc = 'Test: Run File' })
+      vim.keymap.set('n', '<leader>td', function() require("neotest").run.run({ strategy = "dap" }) end,
+        { desc = 'Test: Debug Nearest' })
+      vim.keymap.set('n', '<leader>ts', function() require("neotest").summary.toggle() end,
+        { desc = 'Test: Toggle Summary' })
+      vim.keymap.set('n', '<leader>to',
+        function() require("neotest").output.open({ enter = true, auto_close = true }) end,
+        { desc = 'Test: Show Output' })
+      vim.keymap.set('n', '<leader>tO', function() require("neotest").output_panel.toggle() end,
+        { desc = 'Test: Toggle Output Panel' })
+      vim.keymap.set('n', '<leader>tS', function() require("neotest").run.stop() end, { desc = 'Test: Stop' })
+    end,
   },
   {
     "zbirenbaum/copilot.lua",
@@ -126,6 +293,9 @@ require('lazy').setup({
 
       -- Adds LSP completion capabilities
       'hrsh7th/cmp-nvim-lsp',
+
+      -- Path completion
+      'hrsh7th/cmp-path',
 
       -- Adds a number of user-friendly snippets
       'rafamadriz/friendly-snippets',
@@ -251,9 +421,20 @@ require('lazy').setup({
   --
   --    For additional information see: https://github.com/folke/lazy.nvim#-structuring-your-plugins
   { import = 'custom.plugins' },
+  {
+    'stevearc/oil.nvim',
+    ---@module 'oil'
+    ---@type oil.SetupOpts
+    opts = {},
+    -- Optional dependencies
+    dependencies = { { "nvim-mini/mini.icons", opts = {} } },
+    -- dependencies = { "nvim-tree/nvim-web-devicons" }, -- use if you prefer nvim-web-devicons
+    -- Lazy loading is not recommended because it is very tricky to make it work correctly in all situations.
+    lazy = false,
+  }
 }, {})
 
-require("hardtime").setup()
+-- require(hardtime").setup()
 
 -- [[ Setting options ]]
 -- See `:help vim.o`
@@ -319,7 +500,23 @@ vim.api.nvim_create_autocmd("BufWritePre", {
   command = ":%!htmlbeautifier",
 })
 
+-- Rust-specific autocmds
+vim.api.nvim_create_autocmd("BufWritePre", {
+  pattern = "*.rs",
+  callback = function()
+    vim.lsp.buf.format({ async = false })
+  end,
+})
 
+-- Auto-save and format Cargo.toml
+vim.api.nvim_create_autocmd("BufWritePost", {
+  pattern = "Cargo.toml",
+  callback = function()
+    require('crates').reload()
+  end,
+})
+
+vim.keymap.set("n", "<Leader>o", "<CMD>Oil<CR>", { desc = "Open parent directory" })
 
 
 
@@ -538,11 +735,12 @@ end
 -- document existing key chains
 require('which-key').register {
   ['<leader>c'] = { name = '[C]ode', _ = 'which_key_ignore' },
-  ['<leader>d'] = { name = '[D]ocument', _ = 'which_key_ignore' },
+  ['<leader>d'] = { name = '[D]ocument/[D]ebug', _ = 'which_key_ignore' },
   ['<leader>g'] = { name = '[G]it', _ = 'which_key_ignore' },
   ['<leader>h'] = { name = 'More git', _ = 'which_key_ignore' },
-  ['<leader>r'] = { name = '[R]ename', _ = 'which_key_ignore' },
+  ['<leader>r'] = { name = '[R]ename/[R]ust', _ = 'which_key_ignore' },
   ['<leader>s'] = { name = '[S]earch', _ = 'which_key_ignore' },
+  ['<leader>t'] = { name = '[T]est', _ = 'which_key_ignore' },
   ['<leader>w'] = { name = '[W]orkspace', _ = 'which_key_ignore' },
 }
 
@@ -564,16 +762,10 @@ local servers = {
   --   cmd = { "vscode-eslint-language-server", "--stdio" },
   --   filetypes = { "javascript", "javascriptreact", "javascript.jsx", "typescript", "typescriptreact", "typescript.tsx", "vue", "svelte", "astro" }
   -- },
-  ruby_lsp = {},
-  sorbet = {},
+  -- ruby_lsp = {},
+  -- sorbet = {},
   tsserver = { filetypes = { 'tsx', 'ts' } },
-  rust_analyzer = {
-    ["rust-analyzer"] = {
-      checkOnSave = {
-        command = "clippy",
-      },
-    },
-  },
+  -- NOTE: rust_analyzer is handled by rustaceanvim, not by mason-lspconfig
   -- html = { filetypes = { 'html', 'twig', 'hbs' } },
 
   lua_ls = {
@@ -588,6 +780,9 @@ local servers = {
 
 -- Setup neovim lua configuration
 require('neodev').setup()
+
+-- Setup oil for file explorer
+require("oil").setup()
 
 -- nvim-cmp supports additional completion capabilities, so broadcast that to servers
 local capabilities = vim.lsp.protocol.make_client_capabilities()
@@ -609,6 +804,16 @@ mason_lspconfig.setup_handlers {
       filetypes = (servers[server_name] or {}).filetypes,
     }
   end,
+}
+
+-- Configure Ruby LSP without Mason
+require('lspconfig').ruby_lsp.setup {
+  capabilities = capabilities,
+  on_attach = on_attach,
+  init_options = {
+    formatter = 'standard',
+    linters = { 'standard' },
+  },
 }
 
 -- [[ Configure nvim-cmp ]]
@@ -659,8 +864,17 @@ cmp.setup {
   sources = {
     { name = 'nvim_lsp' },
     { name = 'luasnip' },
+    { name = 'copilot' },
+    { name = 'crates' },
+    { name = 'path' },
   },
 }
+
+vim.api.nvim_create_autocmd("TermOpen", {
+  callback = function()
+    vim.keymap.set("t", "<Esc>", "<C-\\><C-n>", { buffer = true })
+  end,
+})
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
